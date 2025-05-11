@@ -1,18 +1,20 @@
 const User = require("../models/User");
 
+// Get all users
 const getUser = async (req, res) => {
-  // const user = await User.findById(req.body.id);
   const user = await User.find();
-  console.log(user);
   res.status(200).json(user);
 };
 
+// Create a new user
 const createUser = async (req, res) => {
   try {
     // Check if user already exists
     const existingUser = await User.findOne({ email: req.body.email });
     if (existingUser) {
-      return res.status(400).json({ message: "Bu email adresi zaten kullanımda" });
+      return res
+        .status(400)
+        .json({ message: "Bu email adresi zaten kullanımda" });
     }
 
     const user = await User.create(req.body);
@@ -22,15 +24,16 @@ const createUser = async (req, res) => {
   }
 };
 
+// Update a user
 const updateUser = async (req, res) => {
-  const existingUser = await User.findOne({ email: req.body.email });            
-  console.log(existingUser);
+  const existingUser = await User.findOne({ email: req.body.email });
   const user = await User.findByIdAndUpdate(existingUser._id, req.body, {
     new: true,
   });
   res.status(200).json(user);
 };
 
+// Delete a user
 const deleteUser = async (req, res) => {
   try {
     const { userId } = req.params;

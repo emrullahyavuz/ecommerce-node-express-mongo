@@ -1,10 +1,13 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const RefreshToken = require("../models/RefreshToken");
 const { generateTokens, verifyAccessToken, verifyRefreshToken } = require("../utils/tokenUtils");
 const jwtConfig = require("../config/jwt.config");
 const { AppError, logger } = require("../middleware/errorHandler");
 
+
+// Register a new user
 const register = async (req, res, next) => {
     const { username, email, password } = req.body;
 
@@ -24,6 +27,7 @@ const register = async (req, res, next) => {
     }
 };
 
+// Login a user
 const login = async (req, res, next) => {
     const { username, password } = req.body;
 
@@ -40,8 +44,14 @@ const login = async (req, res, next) => {
         if (!isPasswordValid) {
             throw new AppError("Invalid username or password", 401);
         }
+        await RefreshToken.deleteMany({ userId: user._id });
+
 
         const tokens = generateTokens(user);
+        await RefreshToken.create({
+            token: tokens.refreshToken,
+            userId: user._id
+        });
         const cookieOptions = {
             httpOnly: true,
             secure: process.env.NODE_ENV !== "development",
@@ -65,14 +75,21 @@ const login = async (req, res, next) => {
     }
 };
 
+// Logout a user
 const logout = async (req, res, next) => {
     try {
+
+        const refreshToken = req.cookies.refreshToken;
+        if (refreshToken) {
+            await RefreshToken.deleteMany({ token: refreshToken });
+        }
         const cookieOptions = {
             httpOnly: true,
             secure: process.env.NODE_ENV !== "development",
             sameSite: "strict",
             path: "/"
         };
+
         
         res.clearCookie("accessToken", cookieOptions);
         res.clearCookie("refreshToken", cookieOptions);
@@ -84,6 +101,7 @@ const logout = async (req, res, next) => {
     }
 };
 
+// Refresh a user's token
 const refreshToken = async (req, res, next) => {
     const { refreshToken } = req.cookies;
    

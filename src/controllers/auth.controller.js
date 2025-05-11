@@ -1,16 +1,17 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
-const { generateTokens } = require("../utils/tokenUtils");
+const { generateTokens, verifyAccessToken, verifyRefreshToken } = require("../utils/tokenUtils");
 const jwtConfig = require("../config/jwt.config");
+const { AppError, logger } = require("../middleware/errorHandler");
 
-const register = async (req, res) => {
+const register = async (req, res, next) => {
     const { username, email, password } = req.body;
 
     try {
         const existingUser = await User.findOne({ $or: [{ username }, { email }] });
         if (existingUser) {
-            return res.status(400).json({ message: "User already exists" });
+            throw new AppError("User already exists", 400);
         }
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
@@ -19,25 +20,25 @@ const register = async (req, res) => {
         const tokens = generateTokens(user);
         res.status(201).json({ user, tokens });
     } catch (error) {
-        res.status(500).json({ message: "Registration failed" });
+        next(error);
     }
 };
 
-const login = async (req, res) => {
+const login = async (req, res, next) => {
     const { username, password } = req.body;
 
     try {
         const user = await User.findOne({ username });
-        console.log(user)
+        logger.info(`Login attempt for user: ${username}`);
         
         if (!user) {
-            return res.status(401).json({ message: "Invalid username or password" });
+            throw new AppError("Invalid username or password", 401);
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
 
         if (!isPasswordValid) {
-            return res.status(401).json({ message: "Invalid username or password" });
+            throw new AppError("Invalid username or password", 401);
         }
 
         const tokens = generateTokens(user);
@@ -57,42 +58,50 @@ const login = async (req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
 
+        logger.info(`User ${username} logged in successfully`);
         res.json({ user, tokens });
     } catch (error) {
-        res.status(500).json({ message: "Login failed" });
+        next(error);
     }
 };
 
-const logout = async (req, res) => {
-    const cookieOptions = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV !== "development",
-        sameSite: "strict",
-        path: "/"
-    };
-    
-    res.clearCookie("accessToken", cookieOptions);
-    res.clearCookie("refreshToken", cookieOptions);
-    res.json({ message: "Logged out successfully" });
+const logout = async (req, res, next) => {
+    try {
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV !== "development",
+            sameSite: "strict",
+            path: "/"
+        };
+        
+        res.clearCookie("accessToken", cookieOptions);
+        res.clearCookie("refreshToken", cookieOptions);
+        
+        logger.info(`User ${req.user?.username || 'unknown'} logged out`);
+        res.json({ message: "Logged out successfully" });
+    } catch (error) {
+        next(error);
+    }
 };
 
-const refreshToken = async (req, res) => {
+const refreshToken = async (req, res, next) => {
     const { refreshToken } = req.cookies;
    
-    console.log("Received refresh token:", refreshToken);
+    logger.info("Refresh token request received");
 
     if (!refreshToken) {
-        return res.status(401).json({ message: "Refresh token is required" });
+        throw new AppError("Refresh token is required", 401);
     }
 
     try {
-        const decoded = jwt.verify(refreshToken, jwtConfig.refreshToken.secret);
-        console.log("Decoded token:", decoded);
+        const decoded = verifyRefreshToken(refreshToken);
+        logger.info(`Token decoded for user ID: ${decoded.id}`);
+        
         const user = await User.findById(decoded.id);
-        console.log("Found user:", user);
+        logger.info(`User found: ${user ? user.username : 'not found'}`);
 
         if (!user) {
-            return res.status(401).json({ message: "Invalid refresh token" });
+            throw new AppError("Invalid refresh token", 401);
         }
 
         const tokens = generateTokens(user);
@@ -112,10 +121,11 @@ const refreshToken = async (req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
 
+        logger.info(`Tokens refreshed for user: ${user.username}`);
         res.json({ tokens });
     } catch (error) {
-        console.error("Refresh token error:", error);
-        return res.status(401).json({ message: "Invalid refresh token" });
+        logger.error("Refresh token error:", error);
+        next(error);
     }
 };
 

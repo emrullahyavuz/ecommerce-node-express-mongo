@@ -2,6 +2,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const { generateTokens } = require("../utils/tokenUtils");
+const jwtConfig = require("../config/jwt.config");
 
 const register = async (req, res) => {
     const { username, email, password } = req.body;
@@ -40,6 +41,22 @@ const login = async (req, res) => {
         }
 
         const tokens = generateTokens(user);
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV !== "development",
+            sameSite: "strict",
+            path: "/"
+        };
+
+        res.cookie("accessToken", tokens.accessToken, {
+            ...cookieOptions,
+            maxAge: 15 * 60 * 1000, // 15 minutes
+        });
+        res.cookie("refreshToken", tokens.refreshToken, {
+            ...cookieOptions,
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+
         res.json({ user, tokens });
     } catch (error) {
         res.status(500).json({ message: "Login failed" });
@@ -47,10 +64,60 @@ const login = async (req, res) => {
 };
 
 const logout = async (req, res) => {
-    res.clearCookie("accessToken");
-    res.clearCookie("refreshToken");
+    const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV !== "development",
+        sameSite: "strict",
+        path: "/"
+    };
+    
+    res.clearCookie("accessToken", cookieOptions);
+    res.clearCookie("refreshToken", cookieOptions);
     res.json({ message: "Logged out successfully" });
 };
 
-module.exports = { register, login, logout };
+const refreshToken = async (req, res) => {
+    const { refreshToken } = req.cookies;
+   
+    console.log("Received refresh token:", refreshToken);
+
+    if (!refreshToken) {
+        return res.status(401).json({ message: "Refresh token is required" });
+    }
+
+    try {
+        const decoded = jwt.verify(refreshToken, jwtConfig.refreshToken.secret);
+        console.log("Decoded token:", decoded);
+        const user = await User.findById(decoded.id);
+        console.log("Found user:", user);
+
+        if (!user) {
+            return res.status(401).json({ message: "Invalid refresh token" });
+        }
+
+        const tokens = generateTokens(user);
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV !== "development",
+            sameSite: "strict",
+            path: "/"
+        };
+        
+        res.cookie("accessToken", tokens.accessToken, {
+            ...cookieOptions,
+            maxAge: 15 * 60 * 1000, // 15 minutes
+        });
+        res.cookie("refreshToken", tokens.refreshToken, {
+            ...cookieOptions,
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+
+        res.json({ tokens });
+    } catch (error) {
+        console.error("Refresh token error:", error);
+        return res.status(401).json({ message: "Invalid refresh token" });
+    }
+};
+
+module.exports = { register, login, logout, refreshToken };
 

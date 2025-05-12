@@ -10,6 +10,8 @@ const categoryRoutes = require("./routes/categoryRoutes");
 const corsOptions = require("./config/cors.config");
 const { morganMiddleware, requestLogger, errorLogger } = require("./middleware/requestLogger");
 const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./config/swagger.config");
 
 const app = express();
 
@@ -30,6 +32,8 @@ app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
 
+// Swagger
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // static files
 app.use(express.static(path.join(__dirname, "views")));

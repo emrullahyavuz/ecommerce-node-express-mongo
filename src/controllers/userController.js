@@ -27,6 +27,9 @@ const createUser = async (req, res) => {
 // Update a user
 const updateUser = async (req, res) => {
   const existingUser = await User.findOne({ email: req.body.email });
+  if (!existingUser) {
+    return res.status(404).json({ message: "User not found" });
+  }
   const user = await User.findByIdAndUpdate(existingUser._id, req.body, {
     new: true,
   });
@@ -37,7 +40,10 @@ const updateUser = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    await User.findByIdAndDelete(userId);
+    const deletedUser = await User.findByIdAndDelete(userId);
+    if (!deletedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
     res.status(200).json({ message: "User deleted successfully" });
   } catch (error) {
     res.status(400).json({ message: error.message });

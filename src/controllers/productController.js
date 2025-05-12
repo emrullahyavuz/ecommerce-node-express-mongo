@@ -13,6 +13,9 @@ const getProductByCategory = async (req, res) => {
   const product = await Product.find({ category: categoryId }).populate(
     "category"
   );
+  if (!product.length) {
+    return res.status(404).json({ message: "Product not found" });
+  }
   res.status(200).json(product);
 };
 
@@ -25,6 +28,9 @@ const updateProduct = async (req, res) => {
     { name, price, description, stock, category },
     { new: true }
   );
+  if (!product.length) {
+    return res.status(404).json({ message: "Product not found" });
+  }
   res.status(200).json(product);
 };
 
@@ -38,13 +44,19 @@ const createProduct = async (req, res) => {
     stock,
     category,
   });
+  if (!product.length) {
+    return res.status(404).json({ message: "Product not created" });
+  }
   res.status(201).json(product);
 };
 
 // Delete a product
 const deleteProduct = async (req, res) => {
   const { id } = req.params;
-  await Product.findByIdAndDelete(id);
+  const deletedProduct = await Product.findByIdAndDelete(id);
+  if (!deletedProduct) {
+    return res.status(404).json({ message: "Product not found" });
+  }
   res.status(200).json({ message: "Product deleted successfully" });
 };
 

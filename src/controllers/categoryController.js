@@ -10,6 +10,9 @@ const getCategories = async (req, res) => {
 const createCategory = async (req, res) => {
   const { name, description } = req.body;
   const category = await Category.create({ name, description });
+  if (!category) {
+    return res.status(404).json({ message: "Category not created" });
+  }
   res.status(201).json(category);
 };
 
@@ -22,13 +25,19 @@ const updateCategory = async (req, res) => {
     { name, description },
     { new: true }
   );
+  if (!category) {
+    return res.status(404).json({ message: "Category not found" });
+  }
   res.status(200).json(category);
 };
 
 // Delete a category
 const deleteCategory = async (req, res) => {
   const { categoryId } = req.params;
-  await Category.findByIdAndDelete(categoryId);
+  const deletedCategory = await Category.findByIdAndDelete(categoryId);
+  if (!deletedCategory) {
+    return res.status(404).json({ message: "Category not found" });
+  }
   res.status(200).json({ message: "Category deleted successfully" });
 };
 

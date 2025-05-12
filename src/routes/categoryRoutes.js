@@ -7,10 +7,11 @@ const {
   deleteCategory,
 } = require("../controllers/categoryController");
 const { authenticateToken } = require("../middleware/auth");
+const { validateCategory } = require("../validators/categoryValidator");
 
 router.get("/", getCategories);
-router.post("/", authenticateToken, createCategory);
-router.put("/:categoryId", authenticateToken, updateCategory);
+router.post("/", authenticateToken, validateCategory, createCategory);
+router.put("/:categoryId", authenticateToken, validateCategory, updateCategory);
 router.delete("/:categoryId", authenticateToken, deleteCategory);
 
 module.exports = router;

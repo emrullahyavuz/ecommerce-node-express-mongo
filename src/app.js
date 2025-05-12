@@ -5,6 +5,7 @@ const morgan = require("morgan");
 const path = require("path");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
+const productRoutes = require("./routes/productRoutes");
 const corsOptions = require("./config/cors.config");
 const { morganMiddleware, requestLogger, errorLogger } = require("./middleware/requestLogger");
 const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
@@ -25,6 +26,7 @@ app.use(requestLogger); // Detaylı request logları için
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/products", productRoutes);
 
 
 // static files

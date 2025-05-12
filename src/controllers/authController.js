@@ -29,10 +29,11 @@ const register = async (req, res, next) => {
 
 // Login a user
 const login = async (req, res, next) => {
-    const { username, password } = req.body;
+    
 
     try {
-        const user = await User.findOne({ username });
+        const { username, email, password } = req.body;
+        const user = await User.findOne({ $or: [{ username }, { email }] });
         logger.info(`Login attempt for user: ${username}`);
         
         if (!user) {

@@ -24,6 +24,10 @@ const registerSchema = Joi.object({
 });
 
 const loginSchema = Joi.object({
+  username: Joi.string().required().messages({
+    'string.empty': 'Kullanıcı adı alanı boş bırakılamaz',
+    'any.required': 'Kullanıcı adı alanı zorunludur'
+  }),
   email: Joi.string().email().required().messages({
     'string.email': 'Geçerli bir email adresi giriniz',
     'string.empty': 'Email alanı boş bırakılamaz',

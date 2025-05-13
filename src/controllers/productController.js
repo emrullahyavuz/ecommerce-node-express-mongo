@@ -1,4 +1,5 @@
 const Product = require("../models/Product");
+const Category = require("../models/Category");
 
 // Get all products
 const getProducts = async (req, res) => {
@@ -49,9 +50,14 @@ const updateProduct = async (req, res) => {
 
 // Create a product
 const createProduct = async (req, res) => {
-  const { name, price, description, stock, category } = req.body;
-
   try {
+    const { name, price, description, stock, category } = req.body;
+    const existingCategory = await Category.findOne({ slug: category });
+
+    if (!existingCategory) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
     const product = await Product.create({
       name,
       price,

@@ -26,6 +26,9 @@ app.use(cookieParser());
 app.use(morganMiddleware); // HTTP request logları için
 app.use(requestLogger); // Detaylı request logları için
 
+// upload files
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);

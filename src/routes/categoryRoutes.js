@@ -5,6 +5,7 @@ const {
   createCategory,
   updateCategory,
   deleteCategory,
+  getCategoryBySlug,
 } = require("../controllers/categoryController");
 const { authenticateToken } = require("../middleware/auth");
 const { validateCategory } = require("../validators/categoryValidator");
@@ -175,5 +176,30 @@ router.put("/:categoryId", authenticateToken, validateCategory, updateCategory);
  *         description: Kategori bulunamadı
  */
 router.delete("/:categoryId", authenticateToken, deleteCategory);
+
+/**
+ * @swagger
+ * /api/categories/slug/{slug}:
+ *   get:
+ *     summary: Slug'a göre kategori getir
+ *     tags: [Categories]
+ *     parameters:
+ *       - in: path
+ *         name: slug
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Kategori slug'ı
+ *     responses:
+ *       200:
+ *         description: Kategori başarıyla getirildi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Category'
+ *       404:
+ *         description: Kategori bulunamadı
+ */
+router.get("/slug/:slug", getCategoryBySlug);
 
 module.exports = router;

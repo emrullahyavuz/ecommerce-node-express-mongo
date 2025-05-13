@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { createProduct, getProducts, getProductByCategory, updateProduct, deleteProduct } = require("../controllers/productController");
+const { createProduct, getProducts, getProductByCategory, getProductBySlug, updateProduct, deleteProduct } = require("../controllers/productController");
 const { authenticateToken } = require("../middleware/auth");
 const { validateProduct } = require("../validators/productValidator");
 
@@ -102,6 +102,35 @@ router.get("/", authenticateToken, getProducts);
  *         description: Kategori bulunamadı
  */
 router.get("/category/:categoryId", authenticateToken, getProductByCategory);
+
+/**
+ * @swagger
+ * /api/products/slug/{slug}:
+ *   get:
+ *     summary: Slug'a göre ürün getir
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: slug
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Ürün slug'ı
+ *     responses:
+ *       200:
+ *         description: Ürün başarıyla getirildi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Product'
+ *       401:
+ *         description: Yetkilendirme hatası
+ *       404:
+ *         description: Ürün bulunamadı
+ */
+router.get("/slug/:slug", authenticateToken, getProductBySlug);
 
 /**
  * @swagger
